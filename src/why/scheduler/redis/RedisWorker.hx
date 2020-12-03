@@ -49,7 +49,8 @@ class RedisWorker<Payload> extends RedisBase implements Worker<Payload> {
 			
 			inline function next(delay) Timer.delay(poll, delay);
 			
-			// consider using bzpopmin
+			// TODO: peek first to avoid writes
+			// TODO: consider using bzpopmin
 			Promise.ofJsPromise(redis.zpopmin(zkey)).handle(function(o) switch o {
 				case Success([]):
 					// set is empty, try again later
