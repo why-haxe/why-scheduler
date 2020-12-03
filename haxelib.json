@@ -1,0 +1,14 @@
+{
+  "name": "why-scheduler",
+  "license": "MIT",
+  "tags": [
+    "scheduler"
+  ],
+  "classPath": "src",
+  "contributors": [
+    "kevinresol"
+  ],
+  "releasenote": "initial release",
+  "version": "0.0.0",
+  "dependencies": {}
+}
