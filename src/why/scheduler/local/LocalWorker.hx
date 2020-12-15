@@ -1,68 +1,27 @@
-// package why.scheduler.local;
+package why.scheduler.local;
 
-// import haxe.Timer;
-// import why.scheduler.Worker;
+import haxe.Timer;
+import why.scheduler.Worker;
 
-// using tink.CoreApi;
+using tink.CoreApi;
 
-// class LocalWorker<Payload> implements Worker<Payload> {
-// 	public var ready(get, never):Bool;
+@:access(why.scheduler.local)
+class LocalWorker<Payload> implements Worker<Payload> {
 	
-// 	final maxConcurrency:Int;
-// 	var concurrency = 0;
+	final scheduler:LocalScheduler<Payload>;
+	final subscriber:Subscriber<Payload>;
 	
-// 	final subscribers:Array<Subscriber<Payload>> = [];
-// 	final scheduler:LocalScheduler<Payload>;
+	public function new(scheduler, subscriber) {
+		this.scheduler = scheduler;
+		this.subscriber = subscriber;
+	}
 	
-// 	public function new(scheduler, maxConcurrency) {
-// 		this.scheduler = scheduler;
-// 		this.maxConcurrency = maxConcurrency;
-// 	}
+	public function destroy() {
+		scheduler.removeWorker(this);
+		return Future.NOISE;
+	}
 	
-// 	public function subscribe(s:Subscriber<Payload>):CallbackLink {
-// 		add(s);
-// 		return remove.bind(s);
-// 	}
-	
-// 	inline function add(s:Subscriber<Payload>) {
-// 		if(subscribers.length == 0) {
-// 			binding = start();
-// 		}
-// 		subscribers.push(s);
-// 	}
-	
-// 	function remove(s:Subscriber<Payload>) {
-// 		final removed = subscribers.remove(s);
-// 		if(removed && subscribers.length == 0) {
-// 			binding.cancel();
-// 		}
-// 	}
-	
-// 	inline function start() {
-// 		var running = true;
-		
-// 		(function poll() {
-// 			if(!running) return;
-// 			while(concurrency < maxConcurrency) {
-// 				switch scheduler.poll() {
-// 					case null:
-// 						break;
-// 					case task:
-// 						concurrency++;
-// 						Future.inParallel([for(s in subscribers) s(task)]).handle(_ -> if(concurrency-- == maxConcurrency) poll());
-// 				}
-// 			}
-// 		})();
-		
-// 		return () -> running = false;
-// 	}
-	
-// 	public function run():Future<Bool> { // resolves true if available again
-// 		concurrency++;
-// 		Future.inParallel([for(s in subscribers) s(task)]).map(_ -> concurrency-- == maxConcurrency);
-// 	}
-	
-// 	inline function get_ready() {
-// 		return concurrency < maxConcurrency && subscribers.length > 0;
-// 	}
-// }
+	public function run(task) {
+		return subscriber(task);
+	}
+}

@@ -3,7 +3,7 @@ package why.scheduler;
 using tink.CoreApi;
 
 interface Worker<Payload> {
-	function subscribe(cb:Subscriber<Payload>):CallbackLink;
+	function destroy():Future<Noise>;
 }
 
 typedef Subscriber<Payload> = Task<Payload>->Future<Noise>;

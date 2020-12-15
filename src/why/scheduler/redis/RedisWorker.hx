@@ -10,35 +10,23 @@ class RedisWorker<Payload> extends RedisBase implements Worker<Payload> {
 	
 	final interval:Int;
 	final maxConcurrency:Int;
-	final subscribers:Array<Subscriber<Payload>> = [];
+	final subscriber:Subscriber<Payload>;
+	final binding:CallbackLink;
 	
 	var concurrency = 0;
-	var binding:CallbackLink = null;
 	
-	public function new(kind, key, unserialize, interval = 1000, maxConcurrency = 5) {
-		super(kind, key);
+	public function new(redis, key, subscriber, unserialize, interval = 1000, maxConcurrency = 5) {
+		super(redis, key);
+		this.subscriber = subscriber;
 		this.unserialize = unserialize;
 		this.interval = interval;
 		this.maxConcurrency = maxConcurrency;
+		this.binding = monitor();
 	}
 	
-	public function subscribe(s:Subscriber<Payload>):CallbackLink {
-		add(s);
-		return remove.bind(s);
-	}
-	
-	inline function add(s:Subscriber<Payload>) {
-		if(subscribers.length == 0) {
-			binding = monitor();
-		}
-		subscribers.push(s);
-	}
-	
-	function remove(s:Subscriber<Payload>) {
-		final removed = subscribers.remove(s);
-		if(removed && subscribers.length == 0) {
-			binding.cancel();
-		}
+	public function destroy() {
+		binding.cancel();
+		return Future.NOISE; // TODO: wait for all subscriber finish
 	}
 	
 	inline function monitor() {
@@ -49,7 +37,7 @@ class RedisWorker<Payload> extends RedisBase implements Worker<Payload> {
 			
 			inline function next(delay) Timer.delay(poll, delay);
 			
-			// TODO: peek first to avoid writes
+			// TODO: perhaps should peek first to avoid writes (zrange)
 			// TODO: consider using bzpopmin
 			Promise.ofJsPromise(redis.zpopmin(zkey)).handle(function(o) switch o {
 				case Success([]):
@@ -70,8 +58,7 @@ class RedisWorker<Payload> extends RedisBase implements Worker<Payload> {
 								switch o {
 									case Success(payload):
 										final task:Task<Payload> = {id: id, at: Date.fromTime(time), payload: payload}
-										Future #if (tink_core < "2") .ofMany #else .inParallel #end ([for(s in subscribers) s(task)])
-											.handle(_ -> if(concurrency-- == maxConcurrency) next(0));
+										subscriber(task).handle(_ -> if(concurrency-- == maxConcurrency) next(0));
 										
 										// poll again if we have the capacity
 										if(++concurrency < maxConcurrency)
