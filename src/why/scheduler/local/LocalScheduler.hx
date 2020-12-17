@@ -5,6 +5,7 @@ import why.scheduler.Scheduler;
 
 using tink.CoreApi;
 
+@:access(why.scheduler.local)
 class LocalScheduler<Payload> implements Scheduler<Payload> {
 	
 	final timers:Map<String, Timer> = [];

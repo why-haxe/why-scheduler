@@ -11,7 +11,7 @@ class LocalWorker<Payload> implements Worker<Payload> {
 	final scheduler:LocalScheduler<Payload>;
 	final subscriber:Subscriber<Payload>;
 	
-	public function new(scheduler, subscriber) {
+	function new(scheduler, subscriber) {
 		this.scheduler = scheduler;
 		this.subscriber = subscriber;
 	}
@@ -21,7 +21,7 @@ class LocalWorker<Payload> implements Worker<Payload> {
 		return Future.NOISE;
 	}
 	
-	public function run(task) {
+	function run(task) {
 		return subscriber(task);
 	}
 }
