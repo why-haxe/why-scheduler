@@ -10,7 +10,7 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 	
 	final timers:Map<String, Timer> = [];
 	final workers:Array<LocalWorker<Payload>> = [];
-	final pending:Array<Task<Payload>> = [];
+	final pending:Array<Task<Payload>> = []; // tasks with timer triggered but no available workers yet
 	
 	var index:Int = 0;
 	
@@ -22,7 +22,7 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 			case timer: timer.stop();
 		}
 		
-		timers[task.id] = Timer.delay(run.bind(task), Std.int(task.at.getTime() - Date.now().getTime()));
+		timers[task.id] = Timer.delay(trigger.bind(task), Std.int(task.at.getTime() - Date.now().getTime()));
 		return Promise.NOISE;
 	}
 	
@@ -36,10 +36,9 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 		return Promise.NOISE;
 	}
 	
-	public function spawnWorker(s):LocalWorker<Payload> {
-		final worker = new LocalWorker(this, s);
+	public function spawnWorker():LocalWorker<Payload> {
+		final worker = new LocalWorker(this);
 		workers.push(worker);
-		while(pending.length > 0) worker.run(pending.pop());
 		return worker;
 	}
 	
@@ -47,17 +46,29 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 		workers.remove(w);
 	}
 	
-	function run(task:Task<Payload>) {
-		switch nextWorker() {
-			case null: pending.push(task);
-			case worker: worker.run(task).eager();
+	// triggers a task when its timer is expired
+	function trigger(task:Task<Payload>) {
+		for(worker in workers) {
+			switch worker.getSubscriber(task) {
+				case null: // continue;
+				case s:
+					s(task).eager();
+					return;
+			}
 		}
+		
+		// push to pending if no worker is available to handle this task
+		pending.push(task);
 	}
 	
-	function nextWorker() {
-		return switch workers.length {
-			case 0: null;
-			case len: workers[Std.random(len)];
-		}
+	function runPending(worker:LocalWorker<Payload>) {
+		final tasks = pending.copy();
+		pending.resize(0);
+		for(task in tasks)
+			switch worker.getSubscriber(task) {
+				case null: pending.push(task);
+				case s: s(task).eager();
+			}
 	}
+	
 }

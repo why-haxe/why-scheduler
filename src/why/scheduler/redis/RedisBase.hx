@@ -8,7 +8,7 @@ class RedisBase {
 	public function new(redis:RedisKind, key:String) {
 		this.redis = switch redis {
 			case Instance(inst): inst;
-			case Options(opt): cast new Ioredis(opt);
+			case Options(opt): new Ioredis(opt);
 		}
 		this.zkey = key + '-time';
 		this.hkey = key + '-payload';

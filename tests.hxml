@@ -1,3 +1,7 @@
 -cp tests
 -main RunTests
 -dce full
+
+-lib tink_json
+-lib tink_unittest
+-lib hxnodejs-ioredis

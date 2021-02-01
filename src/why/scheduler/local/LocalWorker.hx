@@ -9,11 +9,18 @@ using tink.CoreApi;
 class LocalWorker<Payload> implements Worker<Payload> {
 	
 	final scheduler:LocalScheduler<Payload>;
-	final subscriber:Subscriber<Payload>;
+	final subscribers:Array<Pair<Filterer<Payload>, Subscriber<Payload>>>;
 	
-	function new(scheduler, subscriber) {
+	function new(scheduler) {
 		this.scheduler = scheduler;
-		this.subscriber = subscriber;
+		this.subscribers = [];
+	}
+	
+	public function subscribe(filter:Filterer<Payload>, subscriber:Subscriber<Payload>):CallbackLink {
+		final pair = new Pair(filter, subscriber);
+		subscribers.push(pair);
+		scheduler.runPending(this);
+		return () -> subscribers.remove(pair);
 	}
 	
 	public function destroy() {
@@ -21,7 +28,12 @@ class LocalWorker<Payload> implements Worker<Payload> {
 		return Future.NOISE;
 	}
 	
-	function run(task) {
-		return subscriber(task);
+	function getSubscriber(task) {
+		for(pair in subscribers) {
+			final filter = pair.a;
+			if(filter(task))
+				return pair.b;
+		}
+		return null;
 	}
 }
