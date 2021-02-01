@@ -1,3 +1,3 @@
--cp ${SCOPE_DIR}/../hxnodejs-ioredis/src
+# @install: lix --silent download "gh://github.com/kevinresol/hxnodejs-ioredis#367f34dc5b9cfc1550a706e12426f51e46653ee3" into hxnodejs-ioredis/4.19.2/github/367f34dc5b9cfc1550a706e12426f51e46653ee3
+-cp ${HAXE_LIBCACHE}/hxnodejs-ioredis/4.19.2/github/367f34dc5b9cfc1550a706e12426f51e46653ee3/src
 -D hxnodejs-ioredis=4.19.2
---macro Sys.println("haxe_libraries/hxnodejs-ioredis.hxml:2: [Warning] Using dev version of library hxnodejs-ioredis")
