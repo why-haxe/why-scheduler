@@ -1,19 +1,26 @@
 package why.scheduler.base;
 
 import haxe.Timer;
+import why.scheduler.Worker;
+import why.scheduler.Task;
 
-abstract class PollWorker<Payload> {
+using tink.CoreApi;
+
+abstract class PollWorker<Payload> implements Worker<Payload> {
 	final interval:Int;
+	final subscriptions:Array<Subscription<Payload>> = [];
+	final binding:CallbackLink;
 	
-	public function new(interval) {
+	public function new(interval = 1000) {
 		this.interval = interval;
+		this.binding = monitor();
 	}
 	
 	/**
 	 * List tasks that are ready to be handled
 	 * @return Promise<Array<Task<Payload>>>
 	 */
-	 abstract function list():Promise<Array<Task<Payload>>>;
+	abstract function list():Promise<Array<Task<Payload>>>;
 	 
 	/**
 	 * Get a task atomically 
@@ -23,10 +30,21 @@ abstract class PollWorker<Payload> {
 	abstract function get(id:String):Promise<Bool>;
 	
 	
+	public function subscribe(subscriber:Subscriber<Payload>, ?options:SubscribeOptions<Payload>):CallbackLink {
+		final subscription = new Subscription(subscriber, options);
+		subscriptions.push(subscription);
+		return () -> subscriptions.remove(subscription);
+	}
+	
+	public function destroy() {
+		binding.cancel();
+		return Future.NOISE; // TODO: wait for all subscriber finish
+	}
+	
 	function monitor() {
 		var running = true;
 		
-		(function poll() {
+		function poll() {
 			if(!running) return;
 			
 			inline function next(delay)
@@ -47,7 +65,7 @@ abstract class PollWorker<Payload> {
 									handled = true;
 									
 									// able to handle, try to acquire the task
-									get(id)
+									get(task.id)
 										.handle(function(o) switch o {
 											case Success(false):
 												// can't acquire
@@ -78,7 +96,9 @@ abstract class PollWorker<Payload> {
 					trace(e);
 					next(interval); // redis error
 			});
-		})();
+		}
+		
+		Callback.defer(poll); // start polling on next tick
 		
 		return () -> running = false;
 	}

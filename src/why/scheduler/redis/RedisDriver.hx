@@ -1,9 +1,9 @@
 package why.scheduler.redis;
 
-class RedisBase {
-	final redis:ioredis.Redis;
-	final zkey:String;
-	final hkey:String;
+class RedisDriver {
+	public final redis:ioredis.Redis;
+	public final zkey:String;
+	public final hkey:String;
 	
 	public function new(redisKind:RedisKind, key:String) {
 		this.redis = switch redisKind {
