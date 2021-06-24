@@ -1,8 +1,6 @@
 package why.scheduler.redis;
 
 import why.scheduler.Scheduler;
-import tink.Chunk;
-import tink.chunk.ChunkTools;
 
 using tink.CoreApi;
 

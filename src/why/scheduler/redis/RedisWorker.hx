@@ -1,9 +1,7 @@
 package why.scheduler.redis;
 
-import haxe.Timer;
-import why.scheduler.Worker;
+import why.scheduler.base.PollWorker;
 import why.scheduler.Task;
-import tink.Chunk;
 
 using tink.CoreApi;
 
@@ -11,7 +9,7 @@ typedef RedisWorkerOptions = {
 	?interval:Int,
 }
 
-class RedisWorker<Payload> extends why.scheduler.base.PollWorker<Payload> {
+class RedisWorker<Payload> extends PollWorker<Payload> {
 	
 	final driver:RedisDriver<Payload>;
 	
