@@ -22,7 +22,7 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 			case timer: timer.stop();
 		}
 		
-		timers[task.id] = Timer.delay(trigger.bind(task), Std.int(task.at.getTime() - Date.now().getTime()));
+		timers[task.id] = Timer.delay(trigger.bind(task), Std.int(task.window.from.getTime() - Date.now().getTime()));
 		return Promise.NOISE;
 	}
 	
@@ -48,27 +48,32 @@ class LocalScheduler<Payload> implements Scheduler<Payload> {
 	
 	// triggers a task when its timer is expired
 	function trigger(task:Task<Payload>) {
-		for(worker in workers) {
-			switch worker.getSubscriber(task) {
-				case null: // continue;
-				case s:
-					s(task).eager();
-					return;
+		if(!task.window.expired(Date.now())) {
+			for(worker in workers) {
+				switch worker.getSubscriber(task) {
+					case null: // continue;
+					case s:
+						s(task).eager();
+						return;
+				}
 			}
+			
+			// push to pending if no worker is available to handle this task
+			pending.push(task);
 		}
 		
-		// push to pending if no worker is available to handle this task
-		pending.push(task);
 	}
 	
 	function runPending(worker:LocalWorker<Payload>) {
 		final tasks = pending.copy();
 		pending.resize(0);
+		final now = Date.now();
 		for(task in tasks)
-			switch worker.getSubscriber(task) {
-				case null: pending.push(task);
-				case s: s(task).eager();
-			}
+			if(!task.window.expired(now))
+				switch worker.getSubscriber(task) {
+					case null: pending.push(task);
+					case s: s(task).eager();
+				}
 	}
 	
 }

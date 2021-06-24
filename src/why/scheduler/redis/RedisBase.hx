@@ -5,8 +5,8 @@ class RedisBase {
 	final zkey:String;
 	final hkey:String;
 	
-	public function new(redis:RedisKind, key:String) {
-		this.redis = switch redis {
+	public function new(redisKind:RedisKind, key:String) {
+		this.redis = switch redisKind {
 			case Instance(inst): inst;
 			case Options(opt): new Ioredis(opt);
 		}

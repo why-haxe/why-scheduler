@@ -2,18 +2,19 @@ package why.scheduler.redis;
 
 import why.scheduler.Scheduler;
 import tink.Chunk;
+import tink.chunk.ChunkTools;
 
 using tink.CoreApi;
 
 class RedisScheduler<Payload> extends RedisBase implements Scheduler<Payload> {
 	final serialize:Payload->Chunk;
 	
-	public function new(redis, key, serialize) {
-		super(redis, key);
+	public function new(redisKind, key, serialize) {
+		super(redisKind, key);
 		this.serialize = serialize;
 		
 		// set: zkey, hkey | taskid, time, data
-		this.redis.defineCommand('whyset', {
+		redis.defineCommand('whyset', {
 			numberOfKeys: 2,
 			lua: '
 				redis.call("zadd", KEYS[1], ARGV[2], ARGV[1])
@@ -22,7 +23,7 @@ class RedisScheduler<Payload> extends RedisBase implements Scheduler<Payload> {
 		});
 		
 		// set: zkey, hkey | taskid
-		this.redis.defineCommand('whyunset', {
+		redis.defineCommand('whyunset', {
 			numberOfKeys: 2,
 			lua: '
 				redis.call("zrem", KEYS[1], ARGV[1])
@@ -32,10 +33,17 @@ class RedisScheduler<Payload> extends RedisBase implements Scheduler<Payload> {
 	}
 	
 	public function set(task:Task<Payload>):Promise<Noise> {
-		return Promise.ofJsPromise((cast redis).whyset(zkey, hkey, task.id, task.at.getTime(), serialize(task.payload).toBuffer()));
+		return Promise.ofJsPromise((cast redis).whyset(zkey, hkey, task.id, task.window.from.getTime(), makeRedisPayload(task).toBuffer()));
 	}
 	
 	public function unset(id:String):Promise<Noise> {
 		return Promise.ofJsPromise((cast redis).whyunset(zkey, hkey, id));
+	}
+	
+	inline function makeRedisPayload(task:Task<Payload>):Chunk {
+		return ChunkTools.writeDoubleLE(switch task.window.to {
+			case null: Math.NaN;
+			case v: v.getTime();
+		}) & serialize(task.payload);
 	}
 }

@@ -5,3 +5,6 @@
 -lib tink_json
 -lib tink_unittest
 -lib hxnodejs-ioredis
+
+-D analyzer-optimize
+-D no-deprecation-warnings

@@ -64,7 +64,7 @@ class Test {
 		
 		for(i in 0...ROUNDS) {
 			for(j in 0...TASKS_PER_ROUND) {
-				scheduler.set({id: 'task-$i-$j', payload: {i: i, j: j}, at: Date.now().delta((i+1) * INTERVAL)}).eager();
+				scheduler.set({id: 'task-$i-$j', payload: {i: i, j: j}, window: Date.now().delta((i+1) * INTERVAL)}).eager();
 			}
 		}
 		
@@ -78,7 +78,7 @@ class Test {
 		}
 		
 		function subscribe(filter) {
-			return worker.subscribe(filter, process.bind(filter));
+			return worker.subscribe(process.bind(filter), {filter: filter});
 		}
 		
 		final w1 = subscribe(task -> extract(task.id) % 2 == 0);
