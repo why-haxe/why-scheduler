@@ -22,9 +22,9 @@ class RunTests {
 			{
 				final key = 'why-scheduler';
 				final redis = new Ioredis();
-				final driver = new RedisDriver(Instance(redis), key);
-				final scheduler = new RedisScheduler<MyPayload>(driver, serialize);
-				final worker = new RedisWorker<MyPayload>(driver, unserialize);
+				final driver = new RedisDriver(Instance(redis), key, serialize, unserialize);
+				final scheduler = new RedisScheduler<MyPayload>(driver);
+				final worker = new RedisWorker<MyPayload>(driver);
 				new Test(scheduler, worker);
 			},
 		])).handle(Runner.exit);
