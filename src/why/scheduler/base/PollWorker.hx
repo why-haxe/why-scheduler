@@ -6,28 +6,17 @@ import why.scheduler.Task;
 
 using tink.CoreApi;
 
-abstract class PollWorker<Payload> implements Worker<Payload> {
+class PollWorker<Payload> implements Worker<Payload> {
+	final poller:Poller<Payload>;
 	final interval:Int;
 	final subscriptions:Array<Subscription<Payload>> = [];
 	final binding:CallbackLink;
 	
-	public function new(interval = 1000) {
+	public function new(poller, interval = 1000) {
+		this.poller = poller;
 		this.interval = interval;
 		this.binding = monitor();
 	}
-	
-	/**
-	 * List tasks that are ready to be handled
-	 * @return Promise<Array<Task<Payload>>>
-	 */
-	abstract function list():Promise<Array<Task<Payload>>>;
-	 
-	/**
-	 * Get a task atomically 
-	 * @param id 
-	 * @return Promise<Bool> true if successfully obtained ownership
-	 */
-	abstract function get(id:String):Promise<Bool>;
 	
 	
 	public function subscribe(subscriber:Subscriber<Payload>, ?options:SubscribeOptions<Payload>):CallbackLink {
@@ -50,7 +39,7 @@ abstract class PollWorker<Payload> implements Worker<Payload> {
 			inline function next(delay)
 				Timer.delay(poll, delay);
 			
-			list().handle(function(o) switch o {
+			poller.list(Date.now()).handle(function(o) switch o {
 				case Success([]):
 					// set is empty, try again later
 					next(interval);
@@ -65,7 +54,7 @@ abstract class PollWorker<Payload> implements Worker<Payload> {
 									handled = true;
 									
 									// able to handle, try to acquire the task
-									get(task.id)
+									poller.get(task.id)
 										.handle(function(o) switch o {
 											case Success(false):
 												// can't acquire

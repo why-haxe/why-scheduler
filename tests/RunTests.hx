@@ -5,6 +5,7 @@ import tink.unit.*;
 import why.scheduler.*;
 import why.scheduler.redis.*;
 import why.scheduler.local.*;
+import why.scheduler.web.*;
 import tink.Chunk;
 
 using DateTools;
@@ -22,11 +23,16 @@ class RunTests {
 			{
 				final key = 'why-scheduler';
 				final redis = new Ioredis();
-				final driver = new RedisDriver(Instance(redis), key, serialize, unserialize);
-				final scheduler = new RedisScheduler<MyPayload>(driver);
-				final worker = new RedisWorker<MyPayload>(driver);
+				final scheduler = new RedisScheduler<MyPayload>(Instance(redis), key, serialize);
+				final worker = new RedisWorker<MyPayload>(new RedisPoller(Instance(redis), key, unserialize));
 				new Test(scheduler, worker);
 			},
+			// {
+			// 	final web = new WebDriver<MyPayload>('');
+			// 	final scheduler = new WebScheduler<MyPayload>(web);
+			// 	final worker = new WebWorker<MyPayload>(web);
+			// 	new Test(scheduler, worker);
+			// }
 		])).handle(Runner.exit);
 	}
 	
