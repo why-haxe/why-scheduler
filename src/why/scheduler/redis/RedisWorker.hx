@@ -14,8 +14,8 @@ class RedisWorker<Payload> implements Worker<Payload> {
 	
 	final worker:PollWorker<Payload>;
 	
-	public function new(poller, ?options:RedisWorkerOptions) {
-		worker = new PollWorker(poller, switch options {
+	public function new(redisKind, key, unserialize, ?options:RedisWorkerOptions) {
+		worker = new PollWorker(new RedisPoller(redisKind, key, unserialize), switch options {
 			case null: null;
 			case {interval: v}: v;
 		});

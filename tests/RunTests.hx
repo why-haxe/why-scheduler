@@ -24,7 +24,7 @@ class RunTests {
 				final key = 'why-scheduler';
 				final redis = new Ioredis();
 				final scheduler = new RedisScheduler<MyPayload>(Instance(redis), key, serialize);
-				final worker = new RedisWorker<MyPayload>(new RedisPoller(Instance(redis), key, unserialize));
+				final worker = new RedisWorker<MyPayload>(Instance(redis), key, unserialize);
 				new Test(scheduler, worker);
 			},
 			// {
